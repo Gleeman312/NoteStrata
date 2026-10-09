@@ -1,4 +1,4 @@
-# NoteStrata 1.0
+# NoteStrata 1.0.1
 
 NoteStrata 是一款本地运行的网页版工作清单工具，用于把工作拆分为多层项目、子项目和步骤，并在每一层记录独立笔记。
 
@@ -42,7 +42,7 @@ py -3 app.py
 
 ## Windows x64 Portable 版
 
-1. 完整解压 `NoteStrata-1.0-Windows-x64-Portable.zip`。
+1. 完整解压 `NoteStrata-1.0.1-Windows-x64-Portable.zip`。
 2. 保持 `NoteStrata.exe` 与 `_internal` 文件夹位于同一目录。
 3. 普通双击 `NoteStrata.exe`，不要选择“以管理员身份运行”。
 
@@ -60,7 +60,11 @@ py -3 app.py
 
 ## 退出程序
 
-关闭浏览器标签页不会停止本地服务：
+请点击左侧底部的“退出”按钮。确认后，NoteStrata 会先保存当前内容，再关闭本地服务，并将工作界面切换为“NoteStrata 已退出”提示页。
+
+受浏览器安全限制，普通网页不能可靠地关闭由用户打开的浏览器标签页。看到退出提示后，请手动关闭该标签页；此时后台服务和 `pythonw.exe`/`NoteStrata.exe` 已经结束，不会继续占用后台资源。不点击“退出”时，NoteStrata 会保持后台运行，方便以后重新打开页面。
+
+如果页面无法正常退出，可使用以下备用方法：
 
 - 源码版：在任务管理器中结束对应的 `pythonw.exe`；如果从终端运行，可在终端按 `Ctrl+C`。
 - Portable 版：在任务管理器中结束 `NoteStrata.exe`。
@@ -123,7 +127,7 @@ NoteStrata does not select a specific browser or modify browser/Python file asso
 
 ## Windows x64 portable build
 
-1. Extract the complete `NoteStrata-1.0-Windows-x64-Portable.zip` archive.
+1. Extract the complete `NoteStrata-1.0.1-Windows-x64-Portable.zip` archive.
 2. Keep `NoteStrata.exe` and the `_internal` directory together.
 3. Double-click `NoteStrata.exe` normally. Do not run it as administrator.
 
@@ -141,7 +145,11 @@ If Edge reports that an existing instance is running with elevated privileges, c
 
 ## Stopping NoteStrata
 
-Closing the browser tab does not stop the local service:
+Use the **Exit** button at the bottom of the sidebar. After confirmation, NoteStrata saves the current content, shuts down the local service, and replaces the work interface with a “NoteStrata has exited” page.
+
+Browser security rules prevent ordinary web pages from reliably closing user-opened tabs. Close the tab manually after the exit message appears; the background service and `pythonw.exe`/`NoteStrata.exe` process have already stopped. If **Exit** is not used, NoteStrata remains available in the background so the page can be reopened later.
+
+If the normal exit action is unavailable, use one of these fallback methods:
 
 - Source version: end the matching `pythonw.exe` in Task Manager, or press `Ctrl+C` when running from a terminal.
 - Portable version: end `NoteStrata.exe` in Task Manager.
@@ -155,3 +163,5 @@ NoteStrata has no telemetry, accounts, or remote service. The browser communicat
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.

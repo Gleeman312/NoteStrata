@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>工作清单</title>
+  <title>NoteStrata</title>
   <style>
     :root { color-scheme: light; --ink:#2e3b37; --muted:#7e8984; --line:#e6ece8; --blue:#507c68; --blue-pale:#eaf2ed; --paper:#fff; --bg:#fff; --sidebar:#F9FAFB; --green:#4f8068; --red:#aa5555; --panel-pad:24px; --major-gap:18px; --nested-side:18px; --button-pad:6px; --line-height:20px; --check-size:17px; --check-offset:calc(var(--panel-pad) + (var(--line-height) - var(--check-size))/2); --sage-1:#dcebe1; --sage-2:#e9f2eb; --sage-3:#f3f7f3; --blue-1:#dfeaf3; --blue-2:#ebf1f7; --blue-3:#f4f7fa; --lilac-1:#e9e2f1; --lilac-2:#f1edf6; --lilac-3:#f7f4fa; --peach-1:#f2e2d7; --peach-2:#f7ece4; --peach-3:#fbf4ee; --note:#fff8e8; --status-progress:#5e8c70; --status-waiting:#c38a42; --status-paused:#8a83a5; --status-done:#8b9992; }
     * { box-sizing:border-box; }
@@ -11,6 +11,7 @@
     button,input,select,textarea { font:inherit; }
     button { cursor:pointer; font-family:"Noto Sans SC","Microsoft YaHei",sans-serif; transition:background-color .14s ease,color .14s ease,filter .14s ease,box-shadow .14s ease; }
     .app { display:grid; grid-template-columns:310px minmax(0,1fr); height:100vh; min-height:520px; }
+    .app[hidden] { display:none; }
     .sidebar { background:var(--sidebar); border-right:1px solid var(--line); padding:24px 16px; display:flex; flex-direction:column; min-height:0; }
     .brand { display:block; width:calc(100% - 5px); height:30px; border:1px solid transparent; border-radius:6px; padding:0; margin:0 0 17px 5px; background:transparent; outline:none; color:var(--ink); font-family:"Noto Sans SC Medium","Noto Sans SC","Microsoft YaHei",sans-serif; font-size:20px; font-weight:500; line-height:30px; letter-spacing:.02em; }
     .brand:hover { border-color:var(--line); }
@@ -57,8 +58,10 @@
     .card-delete { flex:0 0 auto; min-height:28px; padding:4px 7px; }
     .card-meta { display:flex; flex-wrap:wrap; justify-content:space-between; gap:2px 8px; color:var(--muted); font-size:13px; margin-top:4px; }
     .empty-list { color:var(--muted); font-size:13px; padding:18px 8px; }
-    .save-state { margin-top:auto; padding:12px 5px 0; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+    .sidebar-footer { margin-top:auto; min-height:45px; display:flex; align-items:flex-end; justify-content:space-between; gap:8px; padding:12px 0 0 5px; border-top:1px solid var(--line); }
+    .save-state { min-width:0; padding-bottom:6px; color:var(--muted); font-size:12px; }
     .save-state.error { color:var(--red); }
+    .exit-button { flex:0 0 auto; }
     main { overflow:auto; padding:36px clamp(22px,5vw,76px) 60px; }
     .content { max-width:920px; margin:0 auto; }
     .welcome { max-width:520px; margin:16vh auto; text-align:center; color:var(--muted); }
@@ -173,6 +176,11 @@
     .confirm-button:hover { background:#f1f4f2; }
     .confirm-button.danger { border-color:#e8cccc; background:#fff7f7; color:var(--red); }
     .confirm-button.danger:hover { background:#fbeaea; }
+    .shutdown-screen { min-height:100vh; display:grid; place-items:center; padding:28px; background:var(--bg); text-align:center; }
+    .shutdown-screen[hidden] { display:none; }
+    .shutdown-card { width:min(480px,100%); padding:34px 30px; border:1px solid var(--line); border-radius:18px; background:var(--sidebar); }
+    .shutdown-card h1 { margin:0 0 10px; font-size:24px; font-weight:500; }
+    .shutdown-card p { margin:0; color:var(--muted); }
     .toast { position:fixed; z-index:30; left:50%; top:50%; background:#263544; color:white; padding:10px 15px; border-radius:8px; box-shadow:0 5px 20px #18283830; opacity:0; transform:translate(-50%,-50%); transition:opacity .2s; pointer-events:none; }
     .toast.show { opacity:1; }
     @media(max-width:760px) { .app { grid-template-columns:230px minmax(0,1fr); } main { padding:25px 18px 45px; } .work-overview { grid-template-columns:1fr; gap:8px; } .work-controls { justify-content:flex-start; } .work-control-row { justify-content:flex-start; } }
@@ -208,10 +216,19 @@
         </div>
       </div>
       <div class="work-list" id="work-list"></div>
-      <div class="save-state" id="save-state">正在连接本地数据…</div>
+      <div class="sidebar-footer">
+        <div class="save-state" id="save-state">正在连接本地数据…</div>
+        <button class="filter exit-button" id="exit-app" type="button">退出</button>
+      </div>
     </aside>
     <main><div class="content" id="details"></div></main>
   </div>
+  <section class="shutdown-screen" id="shutdown-screen" hidden>
+    <div class="shutdown-card">
+      <h1>NoteStrata 已退出</h1>
+      <p>数据已经保存，现在可以关闭此页面。</p>
+    </div>
+  </section>
   <dialog class="tag-dialog" id="tag-manager-modal" aria-labelledby="tag-manager-title">
     <section class="tag-manager">
       <header class="tag-manager-head">
@@ -278,10 +295,11 @@
       const el = $("#toast"); el.textContent = text; el.classList.add("show");
       clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 1800);
     }
-    function confirmAction(message) {
+    function confirmAction(message, acceptLabel="确认删除") {
       const dialog = $("#confirm-dialog");
       if (confirmResolver) confirmResolver(false);
       $("#confirm-message").textContent = message;
+      $("#confirm-accept").textContent = acceptLabel;
       return new Promise(resolve => {
         confirmResolver = resolve;
         if (typeof dialog.showModal === "function") {
@@ -308,7 +326,9 @@
         const response = await fetch("/api/tasks", { method:"POST", headers:{"Content-Type":"application/json"}, body:snapshot });
         if (!response.ok) throw new Error("保存失败");
         setSaveState("已自动保存");
-      }).catch(() => setSaveState("保存失败，请检查启动窗口", true));
+        return true;
+      }).catch(() => { setSaveState("保存失败，请检查启动窗口", true); return false; });
+      return saveQueue;
     }
     function saveSoon() {
       clearTimeout(saveTimer);
@@ -896,6 +916,22 @@
     });
     $("#manage-tags").addEventListener("click", openTagManager);
     $("#export-markdown").addEventListener("click", exportMarkdown);
+    $("#exit-app").addEventListener("click", async () => {
+      if (!await confirmAction("退出 NoteStrata？\n退出前会保存当前内容。", "退出")) return;
+      const button = $("#exit-app"); button.disabled = true;
+      clearTimeout(saveTimer);
+      const saved = await save();
+      if (!saved) { button.disabled = false; notify("保存失败，尚未退出"); return; }
+      $(".app").hidden = true; $("#shutdown-screen").hidden = false;
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      try {
+        const response = await fetch("/api/shutdown", { method:"POST", keepalive:true });
+        if (!response.ok) throw new Error("退出失败");
+      } catch {
+        $("#shutdown-screen").hidden = true; $(".app").hidden = false;
+        button.disabled = false; setSaveState("退出失败，请重试", true); notify("无法退出 NoteStrata");
+      }
+    });
     $("#close-tag-manager").addEventListener("click", closeTagManager);
     $("#tag-manager-modal").addEventListener("click", event => { if (event.target === event.currentTarget) closeTagManager(); });
     $("#tag-manager-modal").addEventListener("close", () => { document.body.style.overflow = ""; });

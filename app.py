@@ -69,7 +69,7 @@ def open_existing_instance() -> None:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "LocalWorkList/1.0"
+    server_version = "NoteStrata/1.0.1"
 
     def log_message(self, _format: str, *_args: object) -> None:
         pass
@@ -109,7 +109,19 @@ class Handler(BaseHTTPRequestHandler):
         self.send_bytes(404, "text/plain; charset=utf-8", "Not found".encode())
 
     def do_POST(self) -> None:
-        if urlparse(self.path).path != "/api/tasks":
+        path = urlparse(self.path).path
+        if path == "/api/shutdown":
+            self.send_bytes(200, "application/json; charset=utf-8", b'{"ok":true}')
+            def stop_server() -> None:
+                # Give the browser time to receive the response before the
+                # listening socket is closed and the process exits.
+                time.sleep(0.25)
+                self.server.shutdown()
+
+            threading.Thread(target=stop_server, daemon=True).start()
+            return
+
+        if path != "/api/tasks":
             self.send_bytes(404, "application/json; charset=utf-8", b'{"error":"Not found"}')
             return
 
@@ -145,7 +157,7 @@ def main() -> None:
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     address = f"http://127.0.0.1:{server.server_port}/"
     INSTANCE_FILE.write_text(str(server.server_port), encoding="ascii")
-    print("工作清单已启动。关闭此窗口即可退出。")
+    print("NoteStrata 已启动。可在页面左下角点击“退出”来关闭程序。")
     print(f"本机地址：{address}")
     if "--no-browser" not in sys.argv and os.environ.get("NOTESTRATA_NO_BROWSER") != "1":
         threading.Timer(0.8, open_app_window, args=(address,)).start()
