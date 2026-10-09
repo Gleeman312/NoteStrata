@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>工作清单</title>
+  <style>
+    :root { color-scheme: light; --ink:#2e3b37; --muted:#7e8984; --line:#e6ece8; --blue:#507c68; --blue-pale:#eaf2ed; --paper:#fff; --bg:#fff; --sidebar:#F9FAFB; --green:#4f8068; --red:#aa5555; --panel-pad:24px; --major-gap:18px; --nested-side:18px; --button-pad:6px; --line-height:20px; --check-size:17px; --check-offset:calc(var(--panel-pad) + (var(--line-height) - var(--check-size))/2); --sage-1:#dcebe1; --sage-2:#e9f2eb; --sage-3:#f3f7f3; --blue-1:#dfeaf3; --blue-2:#ebf1f7; --blue-3:#f4f7fa; --lilac-1:#e9e2f1; --lilac-2:#f1edf6; --lilac-3:#f7f4fa; --peach-1:#f2e2d7; --peach-2:#f7ece4; --peach-3:#fbf4ee; --note:#fff8e8; --status-progress:#5e8c70; --status-waiting:#c38a42; --status-paused:#8a83a5; --status-done:#8b9992; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 "Noto Sans SC","Microsoft YaHei",sans-serif; }
+    button,input,select,textarea { font:inherit; }
+    button { cursor:pointer; font-family:"Noto Sans SC","Microsoft YaHei",sans-serif; transition:background-color .14s ease,color .14s ease,filter .14s ease,box-shadow .14s ease; }
+    .app { display:grid; grid-template-columns:310px minmax(0,1fr); height:100vh; min-height:520px; }
+    .sidebar { background:var(--sidebar); border-right:1px solid var(--line); padding:24px 16px; display:flex; flex-direction:column; min-height:0; }
+    .brand { display:block; width:calc(100% - 5px); height:30px; border:1px solid transparent; border-radius:6px; padding:0; margin:0 0 17px 5px; background:transparent; outline:none; color:var(--ink); font-family:"Noto Sans SC Medium","Noto Sans SC","Microsoft YaHei",sans-serif; font-size:20px; font-weight:500; line-height:30px; letter-spacing:.02em; }
+    .brand:hover { border-color:var(--line); }
+    .brand:focus { border-color:#8bb0d1; box-shadow:0 0 0 3px #356da81b; }
+    .primary { width:100%; background:white; color:#567463; border:1px solid var(--line); border-radius:9px; padding:11px 14px; font-weight:500; text-align:center; }
+    .primary:hover { background:var(--blue-pale); }
+    .primary:active { filter:brightness(.96); }
+    .sidebar-tools { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:13px; }
+    .sidebar-action { width:100%; min-width:0; border:1px solid var(--line); border-radius:9px; padding:9px 10px; background:white; color:#567463; font-weight:500; text-align:center; }
+    .sidebar-action:hover { background:var(--blue-pale); }
+    .sidebar-action:active { filter:brightness(.96); }
+    .search { width:100%; margin:13px 0 10px; padding:9px 11px; border:1px solid var(--line); border-radius:8px; background:white; outline:none; }
+    .search:focus,.field input:focus,.item-title:focus,.note-text:focus { border-color:#8bb0d1; box-shadow:0 0 0 3px #356da81b; }
+    .filters { display:flex; align-items:center; gap:6px; margin:0 0 10px; }
+    .filter { min-height:32px; display:inline-flex; align-items:center; justify-content:center; border:1px solid transparent; background:transparent; color:var(--muted); border-radius:7px; padding:6px 9px; font-size:14px; line-height:20px; }
+    .filter.active { color:var(--muted); background:transparent; }
+    .filter-picker,.sort-wrap { position:relative; }
+    .sort-wrap { margin-left:auto; }
+    .filter-menu { position:absolute; z-index:5; left:0; top:34px; display:none; min-width:132px; max-height:260px; overflow:auto; padding:5px; background:#fff; border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 22px #30443b18; }
+    .filter-menu.open { display:grid; gap:2px; }
+    .filter-option { min-height:32px; display:flex; align-items:center; width:100%; border:0; background:transparent; border-radius:6px; color:var(--muted); padding:6px 9px; text-align:left; font-size:14px; line-height:20px; white-space:nowrap; }
+    .filter-option.active { background:rgb(46 59 55 / .05); color:var(--blue); }
+    .filter-option:hover { background:rgb(46 59 55 / .08); color:var(--blue); }
+    .filter-option:active { background:rgb(46 59 55 / .13); }
+    .sort-menu { position:absolute; z-index:5; right:0; top:34px; display:none; min-width:132px; padding:5px; background:#fff; border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 22px #30443b18; }
+    .sort-menu.open { display:grid; gap:2px; }
+    .sort-option { min-height:32px; display:flex; align-items:center; border:0; background:transparent; border-radius:6px; color:var(--muted); padding:6px 9px; text-align:left; font-size:14px; line-height:20px; }
+    .sort-option.active { background:rgb(46 59 55 / .05); color:var(--blue); }
+    .sort-option:hover { background:rgb(46 59 55 / .08); color:var(--blue); }
+    .sort-option:active { background:rgb(46 59 55 / .13); }
+    .work-list { overflow:auto; min-height:0; margin-right:-13px; padding-right:2px; scrollbar-gutter:stable; scrollbar-width:thin; scrollbar-color:#c8d3cd transparent; }
+    .work-list::-webkit-scrollbar { width:3px; height:3px; }
+    .work-list::-webkit-scrollbar-track { background:transparent; margin:2px 0; }
+    .work-list::-webkit-scrollbar-thumb { background:#c8d3cd; border-radius:999px; }
+    .work-list::-webkit-scrollbar-thumb:hover { background:#9faf9f; }
+    .work-card { width:100%; display:block; text-align:left; border:1px solid transparent; background:transparent; border-radius:9px; padding:11px 10px; margin:3px 0; color:var(--ink); cursor:pointer; }
+    .work-card:hover { background:#f2f5f7; }
+    .work-card:active { filter:brightness(.96); }
+    .work-card:focus-visible { outline:2px solid #8bb0d1; outline-offset:1px; }
+    .work-card.selected { background:var(--blue-pale); border-color:#dce9f5; }
+    .work-card.selected:hover { filter:brightness(.98); }
+    .card-head { display:flex; align-items:center; gap:8px; min-width:0; }
+    .card-title { flex:1 1 auto; min-width:0; display:block; font-family:"Noto Sans SC Medium","Noto Sans SC","Microsoft YaHei",sans-serif; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .card-delete { flex:0 0 auto; min-height:28px; padding:4px 7px; }
+    .card-meta { display:flex; flex-wrap:wrap; justify-content:space-between; gap:2px 8px; color:var(--muted); font-size:13px; margin-top:4px; }
+    .empty-list { color:var(--muted); font-size:13px; padding:18px 8px; }
+    .save-state { margin-top:auto; padding:12px 5px 0; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+    .save-state.error { color:var(--red); }
+    main { overflow:auto; padding:36px clamp(22px,5vw,76px) 60px; }
+    .content { max-width:920px; margin:0 auto; }
+    .welcome { max-width:520px; margin:16vh auto; text-align:center; color:var(--muted); }
+    .welcome h1 { color:var(--ink); font-family:"Noto Sans SC Medium","Noto Sans SC","Microsoft YaHei",sans-serif; font-size:25px; font-weight:500; }
+    .work-group { margin-bottom:var(--major-gap); padding:var(--panel-pad) var(--check-offset) var(--nested-side); border-radius:20px; background:var(--tone-1); }
+    .work-overview { display:grid; grid-template-columns:minmax(220px,1fr) auto; align-items:end; gap:24px; margin:0; padding:0; border-radius:0; background:transparent; }
+    .work-group > .work-notes { margin:var(--major-gap) calc(var(--nested-side) - var(--check-offset)) 0; }
+    .work-group.family-sage { --tone-1:var(--sage-3); --tone-2:var(--sage-2); }
+    .work-group.family-blue { --tone-1:var(--blue-3); --tone-2:var(--blue-2); }
+    .work-group.family-lilac { --tone-1:var(--lilac-3); --tone-2:var(--lilac-2); }
+    .work-group.family-peach { --tone-1:var(--peach-3); --tone-2:var(--peach-2); }
+    .work-info { min-width:0; display:flex; flex-direction:column; justify-content:center; gap:4px; }
+    .work-info .work-control-row { justify-content:flex-start; }
+    .work-title { align-self:center; width:100%; min-width:0; height:42px; border:1px solid transparent; border-radius:8px; background:transparent; padding:3px 7px 5px; margin:0 0 0 -8px; font-family:"Noto Sans SC Medium","Noto Sans SC","Microsoft YaHei",sans-serif; font-size:27px; line-height:normal; font-weight:500; color:var(--ink); }
+    .work-title:hover { border-color:var(--line); }
+    .work-controls { display:flex; align-items:flex-end; justify-content:flex-end; }
+    .work-control-row { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px; }
+    .work-control-row { gap:8px; }
+    .work-controls { align-self:end; }
+    .danger { color:var(--red); }
+    .meta-button { min-height:32px; display:inline-flex; align-items:center; justify-content:center; gap:7px; border:1px solid transparent; border-radius:8px; padding:6px 9px; background:color-mix(in srgb,var(--tone-2) 70%,white); color:#455b4e; font-size:14px; font-weight:400; line-height:20px; white-space:nowrap; }
+    .meta-button:hover { filter:brightness(.96); }
+    .meta-button:active { filter:brightness(.90); }
+    .date-control-wrap { position:relative; display:inline-flex; }
+    .date-input { position:absolute; inset:0; width:100%; height:100%; opacity:0; pointer-events:none; }
+    .status-picker,.tag-picker { position:relative; }
+    .status-dot { width:8px; height:8px; display:inline-block; flex:0 0 auto; border-radius:50%; background:var(--status-progress); }
+    .status-button[data-status="等待中"] .status-dot,.status-option[data-status="等待中"] .status-dot { background:var(--status-waiting); }
+    .status-button[data-status="暂停"] .status-dot,.status-option[data-status="暂停"] .status-dot { background:var(--status-paused); }
+    .status-button[data-status="已完成"] .status-dot,.status-option[data-status="已完成"] .status-dot { background:var(--status-done); }
+    .status-menu { position:absolute; z-index:6; top:calc(100% + 5px); left:0; min-width:126px; display:none; padding:4px; border:1px solid var(--line); border-radius:9px; background:white; box-shadow:0 8px 22px #30443b18; }
+    .status-menu.open { display:grid; gap:2px; }
+    .status-option { width:100%; justify-content:flex-start; background:transparent; color:var(--muted); }
+    .status-option:hover { background:rgb(46 59 55 / .07); filter:none; }
+    .status-option:active { background:rgb(46 59 55 / .13); filter:none; }
+    .tag-button { max-width:170px; overflow:hidden; text-overflow:ellipsis; }
+    .tag-menu { left:auto; right:0; min-width:150px; }
+    .tag-option { width:100%; justify-content:flex-start; background:transparent; color:var(--muted); }
+    .tag-option:hover { background:rgb(46 59 55 / .07); filter:none; }
+    .tag-option:active { background:rgb(46 59 55 / .13); filter:none; }
+    .new-tag-editor { display:none; grid-template-columns:minmax(110px,1fr) auto; align-items:center; gap:5px; padding:2px; }
+    .new-tag-editor.open { display:grid; }
+    .new-tag-input { min-width:0; height:32px; border:1px solid var(--line); border-radius:7px; padding:5px 8px; background:white; color:var(--ink); font:inherit; outline:none; }
+    .new-tag-input:focus { border-color:#8eaa9a; box-shadow:0 0 0 2px rgb(142 170 154 / .18); }
+    .new-tag-confirm { min-height:32px; padding:5px 9px; border:1px solid transparent; border-radius:7px; background:var(--sage-2); color:#455b4e; font-size:14px; white-space:nowrap; }
+    .items-toolbar { display:flex; justify-content:flex-end; margin:0 0 11px; }
+    .small-button { color:#567463; }
+    .item-list { display:flex; flex-direction:column; gap:var(--major-gap); }
+    .item-card { position:relative; border:0; background:var(--tone-1); border-radius:20px; padding:var(--panel-pad) var(--check-offset) var(--nested-side); }
+    .item-card.level-2 { background:var(--tone-2); }
+    .item-card.level-3 { background:var(--tone-3); }
+    .item-card.level-deep { background:color-mix(in srgb,var(--tone-3) var(--tone-percent,85%),#81958b); }
+    .family-sage { --tone-1:var(--sage-3); --tone-2:var(--sage-2); --tone-3:var(--sage-1); }
+    .family-blue { --tone-1:var(--blue-3); --tone-2:var(--blue-2); --tone-3:var(--blue-1); }
+    .family-lilac { --tone-1:var(--lilac-3); --tone-2:var(--lilac-2); --tone-3:var(--lilac-1); }
+    .family-peach { --tone-1:var(--peach-3); --tone-2:var(--peach-2); --tone-3:var(--peach-1); }
+    .item-row { display:flex; align-items:center; flex-wrap:wrap; gap:9px; min-height:var(--line-height); line-height:var(--line-height); }
+    .check { width:17px; height:17px; accent-color:var(--blue); flex:0 0 auto; }
+    .item-title { flex:1 1 220px; min-width:0; height:32px; border:1px solid transparent; border-radius:5px; padding:3px 5px 5px; background:transparent; outline:none; font-family:"Noto Sans SC Medium","Noto Sans SC","Microsoft YaHei",sans-serif; font-weight:500; font-size:17px; line-height:normal; align-self:center; }
+    .item-card.level-1 > .item-row .item-title { font-size:18px; }
+    .item-card.level-2 > .item-row .item-title { font-size:17.5px; }
+    .item-card.level-3 > .item-row .item-title,.item-card.level-deep > .item-row .item-title { font-size:17px; }
+    .item-title.done { color:#8a939c; text-decoration:line-through; }
+    .icon-button,.small-button,.danger { min-height:32px; display:inline-flex; align-items:center; justify-content:center; border:1px solid transparent; background:transparent; border-radius:7px; padding:6px 9px; font-size:14px; line-height:20px; font-family:inherit; font-weight:400; white-space:nowrap; }
+    .icon-button,.small-button { color:#62786b; }
+    .icon-button:hover,.small-button:hover,.danger:hover,.filter:hover { background:rgb(46 59 55 / .07); }
+    .icon-button:active,.small-button:active,.danger:active,.filter:active { background:rgb(46 59 55 / .13); }
+    .icon-button.delete { color:var(--red); }
+    .children,.item-notes { margin:0; padding:0; display:flex; flex-direction:column; gap:var(--major-gap); }
+    .work-notes { display:flex; flex-direction:column; gap:var(--major-gap); }
+    .item-content { margin:var(--major-gap) calc(var(--nested-side) - var(--check-offset)) 0; display:flex; flex-direction:column; gap:var(--major-gap); }
+    .note-toggle { color:#62786b; }
+    .drag-handle { flex:0 0 auto; width:32px; padding:6px 4px; color:#73827a; cursor:grab; touch-action:none; user-select:none; }
+    .drag-handle:active { cursor:grabbing; }
+    .item-card.drag-source { opacity:.48; }
+    .item-card.drop-before::before,.item-card.drop-after::after { position:absolute; z-index:3; right:14px; left:14px; height:3px; border-radius:999px; background:#6488a0; content:""; pointer-events:none; }
+    .item-card.drop-before::before { top:-10px; }
+    .item-card.drop-after::after { bottom:-10px; }
+    .note { background:var(--note); padding:var(--panel-pad); border-radius:12px; color:#685f48; }
+    .note { font-family:"Noto Serif SC","Songti SC","SimSun",serif; }
+    .note-meta { min-height:32px; display:flex; align-items:center; justify-content:space-between; gap:10px; color:var(--muted); font-size:13px; margin-bottom:4px; }
+    .note-text { width:100%; min-height:105px; resize:vertical; border:1px solid transparent; border-radius:4px; background:transparent; color:#49535c; padding:3px 4px; outline:none; font-size:17px; line-height:1.5; font-family:inherit; }
+    .note-render { color:#685f48; font-size:17px; line-height:1.5; min-height:1.5em; cursor:text; }
+    .note-render strong { font-weight:700; }.note-render em { font-style:italic; }.note-render ul { margin:0; padding-left:22px; }.note-render p { margin:0; }
+    .note-actions { display:flex; align-items:center; justify-content:flex-end; }
+    .tag-dialog { position:fixed; inset:0; width:min(480px,calc(100vw - 32px)); max-width:none; max-height:none; margin:auto; padding:0; border:0; border-radius:16px; background:transparent; overflow:visible; }
+    .tag-dialog::backdrop { background:rgb(25 36 31 / .28); }
+    .tag-dialog[open] { display:block; }
+    .tag-manager { width:min(480px,100%); max-height:min(620px,calc(100vh - 40px)); display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--line); border-radius:16px; background:white; box-shadow:0 20px 55px rgb(30 45 37 / .22); }
+    .tag-manager-head { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 20px 13px; border-bottom:1px solid var(--line); }
+    .tag-manager-title { margin:0; font-size:19px; font-weight:600; }
+    .modal-close { width:32px; height:32px; border:0; border-radius:8px; background:transparent; color:var(--muted); font-size:19px; }
+    .modal-close:hover { background:#f1f4f2; color:var(--ink); }
+    .tag-create-form { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; padding:16px 20px; border-bottom:1px solid var(--line); }
+    .tag-manage-input { min-width:0; height:36px; border:1px solid var(--line); border-radius:8px; padding:7px 10px; background:white; color:var(--ink); outline:none; }
+    .tag-manage-input:focus { border-color:#8bb0d1; box-shadow:0 0 0 3px #356da81b; }
+    .tag-create-button { min-height:36px; border:0; border-radius:8px; padding:7px 13px; background:var(--blue); color:white; font-weight:600; }
+    .tag-manager-list { min-height:110px; overflow:auto; padding:8px 20px 18px; }
+    .tag-manager-empty { padding:24px 4px; color:var(--muted); text-align:center; }
+    .tag-manager-row { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:7px; padding:8px 0; border-bottom:1px solid #f0f3f1; }
+    .tag-manager-row:last-child { border-bottom:0; }
+    .tag-row-button { min-height:34px; border:1px solid var(--line); border-radius:7px; padding:6px 9px; background:white; color:#567463; }
+    .tag-row-button:hover { background:var(--blue-pale); }
+    .tag-row-button.delete { color:var(--red); }
+    .confirm-dialog { position:fixed; inset:0; width:min(410px,calc(100vw - 32px)); max-width:none; max-height:none; margin:auto; padding:0; border:0; border-radius:14px; background:transparent; overflow:visible; }
+    .confirm-dialog::backdrop { background:rgb(25 36 31 / .28); }
+    .confirm-dialog[open] { display:block; }
+    .confirm-card { overflow:hidden; border:1px solid var(--line); border-radius:14px; background:white; box-shadow:0 20px 55px rgb(30 45 37 / .22); }
+    .confirm-message { min-height:88px; display:flex; align-items:center; margin:0; padding:24px 24px 18px; color:var(--ink); font-size:16px; line-height:1.65; white-space:pre-line; }
+    .confirm-actions { display:flex; justify-content:flex-end; gap:8px; padding:13px 18px 17px; }
+    .confirm-button { min-width:72px; min-height:36px; border:1px solid var(--line); border-radius:8px; padding:7px 13px; background:white; color:var(--ink); }
+    .confirm-button:hover { background:#f1f4f2; }
+    .confirm-button.danger { border-color:#e8cccc; background:#fff7f7; color:var(--red); }
+    .confirm-button.danger:hover { background:#fbeaea; }
+    .toast { position:fixed; z-index:30; left:50%; top:50%; background:#263544; color:white; padding:10px 15px; border-radius:8px; box-shadow:0 5px 20px #18283830; opacity:0; transform:translate(-50%,-50%); transition:opacity .2s; pointer-events:none; }
+    .toast.show { opacity:1; }
+    @media(max-width:760px) { .app { grid-template-columns:230px minmax(0,1fr); } main { padding:25px 18px 45px; } .work-overview { grid-template-columns:1fr; gap:8px; } .work-controls { justify-content:flex-start; } .work-control-row { justify-content:flex-start; } }
+    @media(max-width:600px) { .work-overview { grid-template-columns:1fr; gap:8px; } .work-title { margin-bottom:0; } .work-controls { justify-items:start; } .work-control-row { justify-content:flex-start; } }
+    @media(max-width:560px) { .app { grid-template-columns:1fr; grid-template-rows:40vh 60vh; height:100dvh; } .sidebar { padding:12px; border-right:0; border-bottom:1px solid var(--line); } .work-list { margin-right:-9px; } .brand { margin-bottom:8px; } .save-state { display:none; } main { padding:20px 14px 40px; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <input class="brand" id="app-title" type="text" value="工作清单" maxlength="40" aria-label="工具名称">
+      <button class="primary" id="new-work">＋ 添加工作</button>
+      <div class="sidebar-tools">
+        <button class="sidebar-action" id="manage-tags" type="button">标签管理</button>
+        <button class="sidebar-action" id="export-markdown" type="button">导出内容</button>
+      </div>
+      <input class="search" id="search" type="search" placeholder="搜索工作名称…" aria-label="搜索工作">
+      <div class="filters" id="filters">
+        <div class="filter-picker" id="status-filter-picker">
+          <button class="filter" id="status-filter-button" type="button" aria-expanded="false">所有状态</button>
+          <div class="filter-menu" id="status-filter-menu" role="menu"></div>
+        </div>
+        <div class="filter-picker" id="tag-filter-picker">
+          <button class="filter" id="tag-filter-button" type="button" aria-expanded="false">所有标签</button>
+          <div class="filter-menu" id="tag-filter-menu" role="menu"></div>
+        </div>
+        <div class="sort-wrap">
+          <button class="filter" id="sort-button" type="button" aria-expanded="false">按收到时间</button>
+          <div class="sort-menu" id="sort-menu">
+            <button class="sort-option active" data-sort="received" type="button">按收到时间</button>
+            <button class="sort-option" data-sort="deadline" type="button">按截止时间</button>
+          </div>
+        </div>
+      </div>
+      <div class="work-list" id="work-list"></div>
+      <div class="save-state" id="save-state">正在连接本地数据…</div>
+    </aside>
+    <main><div class="content" id="details"></div></main>
+  </div>
+  <dialog class="tag-dialog" id="tag-manager-modal" aria-labelledby="tag-manager-title">
+    <section class="tag-manager">
+      <header class="tag-manager-head">
+        <h2 class="tag-manager-title" id="tag-manager-title">标签管理</h2>
+        <button class="modal-close" id="close-tag-manager" type="button" aria-label="关闭标签管理">✕</button>
+      </header>
+      <form class="tag-create-form" id="tag-create-form">
+        <input class="tag-manage-input" id="tag-create-input" type="text" maxlength="30" placeholder="输入新标签名称" aria-label="新标签名称">
+        <button class="tag-create-button" type="submit">新建标签</button>
+      </form>
+      <div class="tag-manager-list" id="tag-manager-list"></div>
+    </section>
+  </dialog>
+  <dialog class="confirm-dialog" id="confirm-dialog" aria-labelledby="confirm-message">
+    <section class="confirm-card">
+      <p class="confirm-message" id="confirm-message"></p>
+      <div class="confirm-actions">
+        <button class="confirm-button" id="confirm-cancel" type="button">取消</button>
+        <button class="confirm-button danger" id="confirm-accept" type="button">确认删除</button>
+      </div>
+    </section>
+  </dialog>
+  <div class="toast" id="toast"></div>
+  <script>
+    const state = { tasks: [], tags: [] };
+    const families = ["family-sage","family-blue","family-lilac","family-peach"];
+    let selectedId = null;
+    let statusFilter = "所有状态";
+    let tagFilter = "所有标签";
+    let sortMode = "received";
+    let saveQueue = Promise.resolve();
+    let toastTimer;
+    let saveTimer;
+    let confirmResolver = null;
+    const pendingEntries = new Set();
+    const pendingNotes = new Set();
+    const editingNotes = new Set();
+    const collapsedNotes = new Set();
+    let dragState = null;
+    let dragTimer = null;
+    const $ = (selector, root=document) => root.querySelector(selector);
+    const today = () => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    };
+    const displayDate = value => value ? value.replaceAll("-", "/") : "设置日期";
+    const id = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    const selectedTask = () => state.tasks.find(task => task.id === selectedId);
+    const statusText = task => task.status || "进行中";
+    const isComplete = task => statusText(task) === "已完成";
+    const allTags = () => [...new Set([
+      ...(Array.isArray(state.tags) ? state.tags : []),
+      ...state.tasks.map(task => (task.tag || "").trim())
+    ].map(tag => String(tag).trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b, "zh-CN"));
+    function rememberTag(tag) {
+      if (!Array.isArray(state.tags)) state.tags = [];
+      if (!state.tags.includes(tag)) state.tags.push(tag);
+    }
+
+    function setSaveState(text, error=false) {
+      const el = $("#save-state"); el.textContent = text; el.classList.toggle("error", error);
+    }
+    function notify(text) {
+      const el = $("#toast"); el.textContent = text; el.classList.add("show");
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 1800);
+    }
+    function confirmAction(message) {
+      const dialog = $("#confirm-dialog");
+      if (confirmResolver) confirmResolver(false);
+      $("#confirm-message").textContent = message;
+      return new Promise(resolve => {
+        confirmResolver = resolve;
+        if (typeof dialog.showModal === "function") {
+          if (!dialog.open) dialog.showModal();
+        } else {
+          dialog.setAttribute("open", "");
+        }
+        requestAnimationFrame(() => $("#confirm-cancel").focus());
+      });
+    }
+    function settleConfirm(result) {
+      const dialog = $("#confirm-dialog");
+      const resolve = confirmResolver; confirmResolver = null;
+      if (dialog.open) {
+        if (typeof dialog.close === "function") dialog.close(); else dialog.removeAttribute("open");
+      }
+      if (resolve) resolve(result);
+    }
+    function save() {
+      clearTimeout(saveTimer);
+      const snapshot = JSON.stringify(state);
+      setSaveState("正在保存…");
+      saveQueue = saveQueue.then(async () => {
+        const response = await fetch("/api/tasks", { method:"POST", headers:{"Content-Type":"application/json"}, body:snapshot });
+        if (!response.ok) throw new Error("保存失败");
+        setSaveState("已自动保存");
+      }).catch(() => setSaveState("保存失败，请检查启动窗口", true));
+    }
+    function saveSoon() {
+      clearTimeout(saveTimer);
+      setSaveState("正在保存…");
+      saveTimer = setTimeout(save, 500);
+    }
+    function renderTagManager() {
+      const list = $("#tag-manager-list");
+      const tags = allTags();
+      list.replaceChildren();
+      if (!tags.length) {
+        const empty = document.createElement("div"); empty.className = "tag-manager-empty"; empty.textContent = "还没有标签。";
+        list.append(empty); return;
+      }
+      tags.forEach(tag => {
+        const row = document.createElement("div"); row.className = "tag-manager-row";
+        const input = document.createElement("input"); input.type = "text"; input.className = "tag-manage-input"; input.value = tag; input.maxLength = 30; input.setAttribute("aria-label", `重命名标签 ${tag}`);
+        const rename = document.createElement("button"); rename.type = "button"; rename.className = "tag-row-button"; rename.textContent = "重命名";
+        const remove = document.createElement("button"); remove.type = "button"; remove.className = "tag-row-button delete"; remove.textContent = "删除";
+        const commitRename = () => {
+          const next = input.value.trim().slice(0, 30);
+          if (!next) { input.value = tag; input.focus(); return; }
+          if (next === tag) return;
+          const catalog = allTags().filter(value => value !== tag && value !== next);
+          catalog.push(next); state.tags = catalog;
+          state.tasks.forEach(task => { if ((task.tag || "").trim() === tag) task.tag = next; });
+          if (tagFilter === tag) tagFilter = next;
+          save(); render(); renderTagManager(); notify(`标签已重命名为“${next}”`);
+        };
+        rename.addEventListener("click", commitRename);
+        input.addEventListener("keydown", event => {
+          if (event.key === "Enter") { event.preventDefault(); commitRename(); }
+          if (event.key === "Escape") { event.preventDefault(); input.value = tag; input.blur(); }
+        });
+        remove.addEventListener("click", async () => {
+          const used = state.tasks.filter(task => (task.tag || "").trim() === tag).length;
+          const detail = used ? `\n该标签正用于 ${used} 项工作；删除后这些工作的标签将被清空。` : "";
+          if (!await confirmAction(`确定删除标签“${tag}”吗？${detail}`)) return;
+          state.tags = allTags().filter(value => value !== tag);
+          state.tasks.forEach(task => { if ((task.tag || "").trim() === tag) task.tag = ""; });
+          if (tagFilter === tag) tagFilter = "所有标签";
+          save(); render(); renderTagManager(); notify(`已删除标签“${tag}”`);
+        });
+        row.append(input, rename, remove); list.append(row);
+      });
+    }
+    function openTagManager() {
+      closeMenus(); renderTagManager();
+      const modal = $("#tag-manager-modal");
+      if (typeof modal.showModal === "function") {
+        if (!modal.open) modal.showModal();
+      } else {
+        modal.setAttribute("open", "");
+      }
+      document.body.style.overflow = "hidden";
+      requestAnimationFrame(() => $("#tag-create-input").focus());
+    }
+    function closeTagManager() {
+      const modal = $("#tag-manager-modal");
+      if (!modal.open) return;
+      if (typeof modal.close === "function") modal.close(); else modal.removeAttribute("open");
+      document.body.style.overflow = ""; $("#manage-tags").focus();
+    }
+    function buildMarkdown() {
+      const title = (appTitle.value || "工作清单").trim() || "工作清单";
+      const lines = [`# ${title}`, "", `> 导出时间：${new Date().toLocaleString("zh-CN", { hour12:false })}`, ""];
+      const tags = allTags();
+      if (tags.length) lines.push("## 标签", "", tags.map(tag => `\`${tag.replaceAll("`", "\\`")}\``).join("　"), "");
+      lines.push("## 工作内容", "");
+      if (!state.tasks.length) lines.push("暂无工作内容。", "");
+      const appendNotes = (notes, heading, indent="") => {
+        const available = (notes || []).filter(note => (note.text || "").trim());
+        if (!available.length) return;
+        if (!indent) lines.push(heading, "");
+        available.forEach(note => {
+          const date = note.created ? `（${note.created}）` : "";
+          if (indent) lines.push(`${indent}- 笔记${date}：`);
+          else lines.push(`**笔记${date}**`, "");
+          const contentIndent = indent ? `${indent}  ` : "";
+          String(note.text || "").trim().split(/\r?\n/).forEach(line => lines.push(`${contentIndent}${line}`));
+          lines.push("");
+        });
+      };
+      const appendItem = (item, depth=0) => {
+        const indent = "  ".repeat(depth);
+        const itemTitle = String(item.title || "未命名项目").replace(/\r?\n/g, " ").trim() || "未命名项目";
+        lines.push(`${indent}- [${item.done ? "x" : " "}] ${itemTitle}`);
+        appendNotes(item.notes, "", `${indent}  `);
+        (item.children || []).forEach(child => appendItem(child, depth + 1));
+      };
+      state.tasks.forEach(task => {
+        const taskTitle = String(task.title || "未命名工作").replace(/\r?\n/g, " ").trim() || "未命名工作";
+        lines.push(`### ${taskTitle}`, "");
+        lines.push(`- 收到时间：${task.received || "未设置"}`);
+        lines.push(`- 截止时间：${task.due || "未设置"}`);
+        lines.push(`- 状态：${statusText(task)}`);
+        lines.push(`- 标签：${task.tag || "无"}`, "");
+        appendNotes(task.notes, "#### 工作笔记");
+        if ((task.items || []).length) {
+          lines.push("#### 项目", "");
+          task.items.forEach(item => appendItem(item));
+          lines.push("");
+        }
+      });
+      return lines.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+    }
+    function exportMarkdown() {
+      const title = (appTitle.value || "工作清单").trim() || "工作清单";
+      const filename = `${title.replace(/[<>:\"/\\|?*\u0000-\u001f]/g, "_")}-${today()}.md`;
+      const blob = new Blob(["\ufeff", buildMarkdown()], { type:"text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob); const link = document.createElement("a");
+      link.href = url; link.download = filename; document.body.append(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000); notify(`已导出 ${filename}`);
+    }
+    function focusEntry(entryId) {
+      requestAnimationFrame(() => {
+        const input = [...document.querySelectorAll("[data-entry-id]")].find(el => el.dataset.entryId === entryId);
+        if (input) { input.focus(); input.select(); }
+      });
+    }
+    function focusNote(noteId) {
+      requestAnimationFrame(() => {
+        const input = [...document.querySelectorAll("[data-note-id]")].find(el => el.dataset.noteId === noteId);
+        if (input) input.focus();
+      });
+    }
+    function discardEntry(entry) {
+      pendingEntries.delete(entry.id);
+      if (state.tasks.includes(entry)) {
+        state.tasks = state.tasks.filter(task => task.id !== entry.id);
+        selectedId = state.tasks[0]?.id || null;
+      } else {
+        removeItem(selectedTask()?.items || [], entry.id);
+      }
+      save();
+      render();
+    }
+    function makeTitleInput(entry, className, label) {
+      const original = entry.title || "";
+      const input = document.createElement("input");
+      input.className = className + (entry.done ? " done" : "");
+      input.value = original;
+      input.placeholder = className === "work-title" ? "输入工作名称…" : "输入项目或步骤名称…";
+      input.dataset.entryId = entry.id;
+      input.setAttribute("aria-label", label);
+      input.addEventListener("input", () => {
+        entry.title = input.value;
+        if (input.value.trim()) saveSoon();
+        else { clearTimeout(saveTimer); setSaveState("编辑中…"); }
+      });
+      input.addEventListener("keydown", event => {
+        if (event.key === "Enter") { event.preventDefault(); input.blur(); }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          if (pendingEntries.has(entry.id)) discardEntry(entry);
+          else { entry.title = original; input.value = original; save(); }
+        }
+      });
+      input.addEventListener("blur", () => {
+        const value = input.value.trim();
+        if (!value) {
+          if (pendingEntries.has(entry.id)) setTimeout(() => {
+            if (pendingEntries.has(entry.id) && !input.value.trim()) discardEntry(entry);
+          }, 100);
+          else { entry.title = original; input.value = original; save(); }
+          return;
+        }
+        entry.title = value;
+        pendingEntries.delete(entry.id);
+        save();
+        setTimeout(renderList, 100);
+      });
+      return input;
+    }
+    function renderFilterMenus() {
+      const statusMenu = $("#status-filter-menu");
+      const tagMenu = $("#tag-filter-menu");
+      statusMenu.replaceChildren(); tagMenu.replaceChildren();
+      const addOption = (menu, label, value, kind, active) => {
+        const option = document.createElement("button"); option.type = "button"; option.className = `filter-option${active ? " active" : ""}`; option.textContent = label; option.dataset[kind] = value;
+        menu.append(option);
+      };
+      [["所有状态","所有状态"],["未完成","未完成"],["已完成","已完成"]].forEach(([label,value]) => addOption(statusMenu, label, value, "statusFilter", statusFilter === value));
+      const tags = allTags();
+      if (tagFilter !== "所有标签" && !tags.includes(tagFilter)) tagFilter = "所有标签";
+      addOption(tagMenu, "所有标签", "所有标签", "tagFilter", tagFilter === "所有标签");
+      tags.forEach(tag => addOption(tagMenu, tag, tag, "tagFilter", tagFilter === tag));
+      $("#status-filter-button").textContent = statusFilter;
+      $("#tag-filter-button").textContent = tagFilter;
+    }
+    function renderList() {
+      const list = $("#work-list"), query = $("#search").value.trim().toLowerCase();
+      renderFilterMenus();
+      list.replaceChildren();
+      const tasks = state.tasks.filter(task => {
+        const matchesStatus = statusFilter === "所有状态" || (statusFilter === "未完成" ? !isComplete(task) : isComplete(task));
+        const matchesTag = tagFilter === "所有标签" || (task.tag || "") === tagFilter;
+        return matchesStatus && matchesTag && (task.title || "").toLowerCase().includes(query);
+      });
+      if (!tasks.length) {
+        const empty = document.createElement("div"); empty.className = "empty-list";
+        empty.textContent = state.tasks.length ? "没有符合条件的工作。" : "还没有工作，点击上方按钮开始记录。";
+        list.append(empty); return;
+      }
+      const dateKey = sortMode === "deadline" ? "due" : "received";
+      tasks.map((task,index) => ({task,index})).sort((a,b) => {
+        const left=a.task[dateKey] || "", right=b.task[dateKey] || "";
+        if (!left && !right) return a.index-b.index;
+        if (!left) return 1;
+        if (!right) return -1;
+        const order=left.localeCompare(right);
+        return (sortMode === "deadline" ? order : -order) || a.index-b.index;
+      }).forEach(({task}) => {
+        const button = document.createElement("div"); button.className = "work-card" + (task.id === selectedId ? " selected" : ""); button.tabIndex = 0; button.setAttribute("role", "button");
+        const head = document.createElement("div"); head.className = "card-head";
+        const title = document.createElement("span"); title.className = "card-title"; title.textContent = task.title || "未命名工作";
+        const deleteButton = document.createElement("button"); deleteButton.type = "button"; deleteButton.className = "icon-button delete card-delete"; deleteButton.textContent = "✕"; deleteButton.setAttribute("aria-label", `删除工作 ${task.title || "未命名工作"}`); deleteButton.title = "删除工作";
+        deleteButton.addEventListener("click", async event => {
+          event.stopPropagation();
+          if (!await confirmAction("删除这项工作及其全部子项和记录？此操作无法撤销。")) return;
+          state.tasks = state.tasks.filter(item => item.id !== task.id);
+          selectedId = state.tasks[0]?.id || null;
+          save(); render();
+        });
+        head.append(title, deleteButton);
+        const meta = document.createElement("span"); meta.className = "card-meta";
+        const date = document.createElement("span"); date.textContent = task.received ? `收到 ${task.received}` : "未填写收到日期";
+        const deadline = document.createElement("span"); deadline.textContent = task.due ? `截止 ${task.due}` : "";
+        const status = document.createElement("span"); status.textContent = statusText(task);
+        meta.append(date); if(task.due) meta.append(deadline); meta.append(status); button.append(head, meta);
+        const selectTask = () => { selectedId = task.id; render(); };
+        button.addEventListener("click", event => { if (!event.target.closest(".card-delete")) selectTask(); });
+        button.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectTask(); } });
+        list.append(button);
+      });
+    }
+    function makeButton(label, handler, extra="") {
+      const button = document.createElement("button"); button.className = `icon-button ${extra}`; button.textContent = label;
+      button.addEventListener("click", handler); return button;
+    }
+    function noteToggle(target) {
+      if (!target.notes || !target.notes.length) return null;
+      const collapsed = collapsedNotes.has(target.id);
+      const button = makeButton(collapsed ? "展开笔记" : "收起笔记", () => {
+        if (collapsed) collapsedNotes.delete(target.id); else collapsedNotes.add(target.id);
+        render();
+      }, "note-toggle");
+      button.setAttribute("aria-expanded", String(!collapsed));
+      return button;
+    }
+    function addNote(target) {
+      target.notes = target.notes || [];
+      const note = { id:id(), text:"", created:today() };
+      target.notes.push(note); pendingNotes.add(note.id); editingNotes.add(note.id); collapsedNotes.delete(target.id);
+      render(); focusNote(note.id);
+    }
+    function inlineMarkdown(text) {
+      const fragment = document.createDocumentFragment();
+      const pattern = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g;
+      let cursor = 0;
+      for (const match of text.matchAll(pattern)) {
+        fragment.append(document.createTextNode(text.slice(cursor, match.index)));
+        const strong = match[0].startsWith("**");
+        const el = document.createElement(strong ? "strong" : "em");
+        el.textContent = match[0].slice(strong ? 2 : 1, strong ? -2 : -1);
+        fragment.append(el); cursor = match.index + match[0].length;
+      }
+      fragment.append(document.createTextNode(text.slice(cursor))); return fragment;
+    }
+    function renderMarkdown(text) {
+      const root = document.createElement("div");
+      let list = null;
+      String(text || "").split("\n").forEach(line => {
+        if (line.startsWith("- ")) {
+          if (!list) { list = document.createElement("ul"); root.append(list); }
+          const li = document.createElement("li"); li.append(inlineMarkdown(line.slice(2))); list.append(li); return;
+        }
+        list = null; const p = document.createElement("p");
+        if (line) p.append(inlineMarkdown(line)); else p.append(document.createElement("br")); root.append(p);
+      });
+      return root;
+    }
+    function renderNotes(target, className="item-notes") {
+      const wrap = document.createElement("div"); wrap.className = className;
+      (target.notes || []).forEach(note => {
+        let originalText = note.text || "";
+        const box = document.createElement("div"); box.className = "note"; box.dataset.noteBoxId = note.id;
+        const meta = document.createElement("div"); meta.className = "note-meta";
+        const stamp = document.createElement("span"); stamp.textContent = note.created || "记录";
+        const actions = document.createElement("span");
+        const deleteNote = makeButton("✕", async () => {
+          if (!await confirmAction("删除这条笔记？")) return;
+          target.notes = target.notes.filter(item => item.id !== note.id);
+          pendingNotes.delete(note.id); editingNotes.delete(note.id); save(); render();
+        }, "delete");
+        deleteNote.setAttribute("aria-label", "删除笔记"); deleteNote.title = "删除笔记";
+        deleteNote.addEventListener("mousedown", event => event.preventDefault());
+        actions.append(deleteNote);
+        meta.append(stamp, actions);
+        const textarea = document.createElement("textarea"); textarea.className = "note-text"; textarea.value = note.text;
+        textarea.dataset.noteId = note.id;
+        textarea.placeholder = "输入笔记内容；Ctrl+Enter 完成";
+        textarea.setAttribute("aria-label", "随手记录");
+        textarea.addEventListener("input", () => {
+          note.text = textarea.value;
+          if (textarea.value.trim()) saveSoon();
+          else { clearTimeout(saveTimer); setSaveState("编辑中…"); }
+        });
+        textarea.addEventListener("keydown", event => {
+          if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); textarea.blur(); }
+          if (event.key === "Escape" && pendingNotes.has(note.id)) {
+            event.preventDefault(); pendingNotes.delete(note.id);
+            editingNotes.delete(note.id); target.notes = target.notes.filter(item => item.id !== note.id); box.remove();
+            if (!target.notes.length) wrap.remove(); save();
+          } else if (event.key === "Escape") {
+            event.preventDefault(); note.text = originalText; textarea.value = originalText; editingNotes.delete(note.id); save(); showRendered();
+          }
+        });
+        textarea.addEventListener("blur", () => {
+          const value = textarea.value.trim();
+          if (!value) {
+            if (pendingNotes.has(note.id)) {
+              setTimeout(() => {
+                if (pendingNotes.has(note.id) && !textarea.value.trim()) {
+                  pendingNotes.delete(note.id); editingNotes.delete(note.id); target.notes = target.notes.filter(item => item.id !== note.id);
+                  document.querySelectorAll("[data-note-box-id]").forEach(node => { if (node.dataset.noteBoxId === note.id) node.remove(); });
+                  document.querySelectorAll(".work-notes,.item-notes").forEach(node => { if (!node.children.length) node.remove(); }); save();
+                }
+              }, 100);
+            } else {
+              note.text = originalText; textarea.value = originalText; editingNotes.delete(note.id); save(); showRendered();
+            }
+            return;
+          }
+          note.text = value; textarea.value = value; pendingNotes.delete(note.id); editingNotes.delete(note.id); originalText = value; save(); showRendered();
+        });
+        box.append(meta);
+        if (editingNotes.has(note.id)) box.append(textarea); else showRendered();
+        wrap.append(box);
+
+        function showRendered() {
+          const rendered = renderMarkdown(note.text); rendered.className = "note-render"; rendered.tabIndex = 0;
+          const edit = () => {
+            originalText = note.text || ""; textarea.value = originalText; editingNotes.add(note.id);
+            box.replaceChild(textarea, rendered); textarea.focus();
+          };
+          rendered.addEventListener("click", edit);
+          rendered.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); edit(); } });
+          if (textarea.parentElement === box) box.replaceChild(rendered, textarea); else box.append(rendered);
+        }
+      });
+      return wrap;
+    }
+    function installDrag(handle, card) {
+      let press = null;
+      handle.addEventListener("pointerdown", event => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        press = { pointerId:event.pointerId, x:event.clientX, y:event.clientY };
+        handle.setPointerCapture(event.pointerId);
+        dragTimer = setTimeout(() => {
+          if (!press) return;
+          dragState = { card, item:card._sortEntry, items:card._sortItems, pointerId:press.pointerId, target:null, after:false };
+          card.classList.add("drag-source"); document.body.classList.add("drag-active");
+        }, 200);
+      });
+      handle.addEventListener("pointermove", event => {
+        if (!press || event.pointerId !== press.pointerId) return;
+        if (!dragState) {
+          if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > 8) {
+            clearTimeout(dragTimer); dragTimer = null; press = null;
+          }
+          return;
+        }
+        event.preventDefault();
+        document.querySelectorAll(".item-card.drop-before,.item-card.drop-after").forEach(node => node.classList.remove("drop-before", "drop-after"));
+        let target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".item-card");
+        while (target && target._sortItems !== dragState.items) target = target.parentElement?.closest(".item-card") || null;
+        if (!target || target === card) { dragState.target = null; return; }
+        const rect = target.getBoundingClientRect();
+        const after = event.clientY >= rect.top + rect.height / 2;
+        target.classList.add(after ? "drop-after" : "drop-before");
+        dragState.target = target; dragState.after = after;
+      });
+      const finish = event => {
+        if (!press || event.pointerId !== press.pointerId) return;
+        clearTimeout(dragTimer); dragTimer = null;
+        let changed = false;
+        if (dragState && dragState.pointerId === event.pointerId && dragState.target) {
+          const {items,item,target,after} = dragState;
+          const before = items.map(entry => entry.id).join("|");
+          const [moving] = items.splice(items.indexOf(item), 1);
+          const targetIndex = items.indexOf(target._sortEntry);
+          if (moving && targetIndex >= 0) items.splice(targetIndex + (after ? 1 : 0), 0, moving);
+          changed = before !== items.map(entry => entry.id).join("|");
+        }
+        document.querySelectorAll(".item-card.drag-source,.item-card.drop-before,.item-card.drop-after").forEach(node => node.classList.remove("drag-source", "drop-before", "drop-after"));
+        document.body.classList.remove("drag-active"); dragState = null; press = null;
+        if (changed) { save(); render(); }
+      };
+      handle.addEventListener("pointerup", finish);
+      handle.addEventListener("pointercancel", finish);
+      handle.addEventListener("contextmenu", event => event.preventDefault());
+    }
+    function renderItem(item, depth=1, family="family-sage", siblings=[]) {
+      const depthClass = depth <= 3 ? `level-${depth}` : "level-deep";
+      const card = document.createElement("div"); card.className = `item-card ${depthClass} ${family}`;
+      card._sortItems = siblings; card._sortEntry = item;
+      if (depth > 3) card.style.setProperty("--tone-percent", `${Math.max(70,100-(depth-3)*7)}%`);
+      const row = document.createElement("div"); row.className = "item-row";
+      const check = document.createElement("input"); check.type = "checkbox"; check.className = "check"; check.checked = !!item.done;
+      check.setAttribute("aria-label", "完成此项"); check.addEventListener("change", () => { item.done = check.checked; save(); render(); });
+      const title = makeTitleInput(item, "item-title", "项目名称");
+      row.append(check, title);
+      const dragHandle = makeButton("⠿", () => {}, "drag-handle");
+      dragHandle.setAttribute("aria-label", "长按并拖动以调整同级顺序"); dragHandle.title = "长按后拖动，调整同级顺序";
+      installDrag(dragHandle, card); row.append(dragHandle);
+      const toggle = noteToggle(item); if (toggle) row.append(toggle);
+      row.append(
+        makeButton("＋ 添加子项", () => {
+          item.children = item.children || [];
+          const child = { id:id(), title:"", done:false, children:[], notes:[] };
+          item.children.push(child); pendingEntries.add(child.id); render(); focusEntry(child.id);
+        }),
+        makeButton("＋ 添加笔记", () => addNote(item)),
+        makeButton("✕", async () => {
+          if (!await confirmAction("删除此项及其所有子项和记录？")) return;
+          removeItem(selectedTask().items, item.id); save(); render();
+        }, "delete")
+      );
+      row.lastElementChild.setAttribute("aria-label", "删除此项"); row.lastElementChild.title = "删除此项";
+      card.append(row);
+      const content = document.createElement("div"); content.className = "item-content";
+      if (item.notes && item.notes.length && !collapsedNotes.has(item.id)) content.append(renderNotes(item));
+      if (item.children && item.children.length) {
+        const children = document.createElement("div"); children.className = "children";
+        item.children.forEach(child => children.append(renderItem(child, depth + 1, family, item.children))); content.append(children);
+      }
+      if (content.children.length) card.append(content);
+      return card;
+    }
+    function removeItem(items, itemId) {
+      const index = items.findIndex(item => item.id === itemId);
+      if (index >= 0) { items.splice(index, 1); return true; }
+      return items.some(item => removeItem(item.children || [], itemId));
+    }
+    function makeDateControl(task, key, label) {
+      const wrap = document.createElement("div"); wrap.className = "date-control-wrap";
+      const button = document.createElement("button"); button.type = "button"; button.className = "meta-button date-control";
+      button.textContent = `${label}：${displayDate(task[key])}`;
+      const input = document.createElement("input"); input.type = "date"; input.className = "date-input"; input.value = task[key] || "";
+      input.setAttribute("aria-label", `${label}日期`);
+      button.addEventListener("click", event => {
+        try { if (input.showPicker) input.showPicker(); else input.click(); }
+        catch { input.click(); }
+      });
+      input.addEventListener("change", () => { task[key] = input.value; save(); render(); });
+      wrap.append(button, input); return wrap;
+    }
+    function closeMenus() {
+      $$(".filter-menu.open,.sort-menu.open,.status-menu.open").forEach(menu => menu.classList.remove("open"));
+      $$('[aria-expanded="true"]').forEach(button => button.setAttribute("aria-expanded", "false"));
+      $$(".new-tag-editor.open").forEach(editor => {
+        editor.classList.remove("open");
+        const option = editor.previousElementSibling;
+        if (option?.classList.contains("new-tag-option")) option.hidden = false;
+        const input = editor.querySelector(".new-tag-input");
+        if (input) input.value = "";
+      });
+    }
+    function makeStatusControl(task) {
+      const wrap = document.createElement("div"); wrap.className = "status-picker";
+      const button = document.createElement("button"); button.type = "button"; button.className = "meta-button status-button";
+      button.dataset.status = statusText(task); button.setAttribute("aria-haspopup", "menu"); button.setAttribute("aria-expanded", "false");
+      const dot = document.createElement("span"); dot.className = "status-dot";
+      const label = document.createElement("span"); label.textContent = statusText(task); button.append(dot, label);
+      const menu = document.createElement("div"); menu.className = "status-menu"; menu.setAttribute("role", "menu");
+      ["进行中","等待中","暂停","已完成"].forEach(value => {
+        const option = document.createElement("button"); option.type = "button"; option.className = "meta-button status-option"; option.setAttribute("role", "menuitem");
+        const optionDot = document.createElement("span"); optionDot.className = "status-dot";
+        const text = document.createElement("span"); text.textContent = value; option.append(optionDot, text); option.dataset.status = value;
+        option.addEventListener("click", event => { event.stopPropagation(); task.status = value; save(); render(); });
+        menu.append(option);
+      });
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        const open = !menu.classList.contains("open");
+        closeMenus();
+        menu.classList.toggle("open", open); button.setAttribute("aria-expanded", String(open));
+      });
+      wrap.append(button, menu); return wrap;
+    }
+    function makeTagControl(task) {
+      const wrap = document.createElement("div"); wrap.className = "tag-picker";
+      const button = document.createElement("button"); button.type = "button"; button.className = "meta-button tag-button";
+      button.textContent = task.tag || "+ 添加标签"; button.setAttribute("aria-haspopup", "menu"); button.setAttribute("aria-expanded", "false");
+      const menu = document.createElement("div"); menu.className = "status-menu tag-menu"; menu.setAttribute("role", "menu");
+      const tags = allTags();
+      const addOption = (label, value, extra="") => {
+        const option = document.createElement("button"); option.type = "button"; option.className = `meta-button tag-option ${extra}`; option.textContent = label; option.setAttribute("role", "menuitem");
+        option.addEventListener("click", event => { event.stopPropagation(); if (value === "__new__") return; task.tag = value; save(); render(); }); menu.append(option); return option;
+      };
+      if (task.tag) addOption("不设置标签", "");
+      tags.forEach(tag => addOption(tag, tag));
+      const newOption = addOption("＋ 添加标签", "__new__", "new-tag-option");
+      const editor = document.createElement("form"); editor.className = "new-tag-editor"; editor.setAttribute("role", "none");
+      const input = document.createElement("input"); input.type = "text"; input.className = "new-tag-input"; input.maxLength = 30; input.placeholder = "输入标签名称"; input.setAttribute("aria-label", "新标签名称");
+      const confirm = document.createElement("button"); confirm.type = "submit"; confirm.className = "new-tag-confirm"; confirm.textContent = "添加";
+      editor.append(input, confirm); menu.append(editor);
+      newOption.addEventListener("click", event => {
+        event.stopPropagation();
+        newOption.hidden = true; editor.classList.add("open");
+        requestAnimationFrame(() => input.focus());
+      });
+      editor.addEventListener("submit", event => {
+        event.preventDefault(); event.stopPropagation();
+        const tag = input.value.trim();
+        if (!tag) { input.focus(); return; }
+        task.tag = tag.slice(0, 30); rememberTag(task.tag); save(); render();
+      });
+      input.addEventListener("keydown", event => {
+        if (event.key !== "Escape") return;
+        event.preventDefault(); event.stopPropagation(); input.value = "";
+        editor.classList.remove("open"); newOption.hidden = false; newOption.focus();
+      });
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        const open = !menu.classList.contains("open"); closeMenus();
+        menu.classList.toggle("open", open); button.setAttribute("aria-expanded", String(open));
+      });
+      wrap.append(button, menu); return wrap;
+    }
+    function renderDetails() {
+      const root = $("#details"), task = selectedTask(); root.replaceChildren();
+      if (!task) {
+        const welcome = document.createElement("div"); welcome.className = "welcome";
+        const heading = document.createElement("h1"); heading.textContent = "把手头的工作理清楚";
+        const text = document.createElement("p"); text.textContent = "在左侧新增一项工作，然后把内容拆成可勾选的多层项目。随手记录可以附在工作或任何项目下面。";
+        welcome.append(heading, text); root.append(welcome); return;
+      }
+      const title = makeTitleInput(task, "work-title", "工作名称");
+      const taskIndex = Math.max(0, state.tasks.findIndex(entry => entry.id === task.id));
+      if (!task.family) task.family = families[taskIndex % families.length];
+      const workFamily = task.family;
+      const group = document.createElement("section"); group.className = `work-group ${workFamily}`;
+      const overview = document.createElement("div"); overview.className = "work-overview";
+      const workInfo = document.createElement("div"); workInfo.className = "work-info";
+      const controls = document.createElement("div"); controls.className = "work-controls";
+      const actions = document.createElement("div"); actions.className = "work-control-row";
+      const workToggle = noteToggle(task); if (workToggle) actions.append(workToggle);
+      actions.append(makeButton("＋ 添加项目", () => {
+        const item = { id:id(), title:"", done:false, children:[], notes:[] };
+        task.items.push(item); pendingEntries.add(item.id); render(); focusEntry(item.id);
+      }, "small-button"));
+      actions.append(makeButton("＋ 添加笔记", () => addNote(task)));
+      const del = document.createElement("button"); del.type = "button"; del.className = "danger delete"; del.textContent = "✕";
+      del.setAttribute("aria-label", "删除工作"); del.title = "删除工作";
+      del.addEventListener("click", async () => {
+        if (!await confirmAction("删除这项工作及其全部子项和记录？此操作无法撤销。")) return;
+        state.tasks = state.tasks.filter(item => item.id !== task.id); selectedId = state.tasks[0]?.id || null; save(); render();
+      });
+      actions.append(del);
+
+      const meta = document.createElement("div"); meta.className = "work-control-row";
+      for (const [key,label] of [["received","收到"],["due","截止"]]) meta.append(makeDateControl(task,key,label));
+      meta.append(makeStatusControl(task), makeTagControl(task));
+      workInfo.append(title, meta); controls.append(actions);
+      overview.append(workInfo, controls); group.append(overview);
+      if (task.notes && task.notes.length && !collapsedNotes.has(task.id)) group.append(renderNotes(task, "work-notes"));
+      root.append(group);
+
+      const items = document.createElement("div"); items.className = "item-list";
+      task.items.forEach((item,index) => {
+        if (!item.family) item.family = families[(families.indexOf(workFamily) + index + families.length) % families.length];
+        items.append(renderItem(item, 1, item.family, task.items));
+      });
+      items.style.marginBottom = "28px";
+      root.append(items);
+    }
+    function render() { renderList(); renderDetails(); }
+
+    $("#new-work").addEventListener("click", () => {
+      const task = { id:id(), title:"", received:today(), due:"", status:"进行中", tag:"", family:families[state.tasks.length % families.length], items:[], notes:[] };
+      state.tasks.unshift(task); selectedId = task.id; pendingEntries.add(task.id); render(); focusEntry(task.id);
+    });
+    $("#manage-tags").addEventListener("click", openTagManager);
+    $("#export-markdown").addEventListener("click", exportMarkdown);
+    $("#close-tag-manager").addEventListener("click", closeTagManager);
+    $("#tag-manager-modal").addEventListener("click", event => { if (event.target === event.currentTarget) closeTagManager(); });
+    $("#tag-manager-modal").addEventListener("close", () => { document.body.style.overflow = ""; });
+    $("#confirm-cancel").addEventListener("click", () => settleConfirm(false));
+    $("#confirm-accept").addEventListener("click", () => settleConfirm(true));
+    $("#confirm-dialog").addEventListener("click", event => { if (event.target === event.currentTarget) settleConfirm(false); });
+    $("#confirm-dialog").addEventListener("cancel", event => { event.preventDefault(); settleConfirm(false); });
+    $("#tag-create-form").addEventListener("submit", event => {
+      event.preventDefault();
+      const input = $("#tag-create-input"); const tag = input.value.trim().slice(0, 30);
+      if (!tag) { input.focus(); return; }
+      if (allTags().includes(tag)) { notify(`标签“${tag}”已存在`); input.select(); return; }
+      rememberTag(tag); input.value = ""; save(); render(); renderTagManager(); notify(`已新建标签“${tag}”`); input.focus();
+    });
+    $("#search").addEventListener("input", renderList);
+    $("#status-filter-button").addEventListener("click", event => {
+      event.stopPropagation(); const menu = $("#status-filter-menu"), open = !menu.classList.contains("open");
+      closeMenus(); menu.classList.toggle("open", open); $("#status-filter-button").setAttribute("aria-expanded", String(open));
+    });
+    $("#tag-filter-button").addEventListener("click", event => {
+      event.stopPropagation(); const menu = $("#tag-filter-menu"), open = !menu.classList.contains("open");
+      closeMenus(); menu.classList.toggle("open", open); $("#tag-filter-button").setAttribute("aria-expanded", String(open));
+    });
+    $("#status-filter-menu").addEventListener("click", event => {
+      const option = event.target.closest("[data-status-filter]"); if (!option) return;
+      statusFilter = option.dataset.statusFilter; closeMenus(); renderList();
+    });
+    $("#tag-filter-menu").addEventListener("click", event => {
+      const option = event.target.closest("[data-tag-filter]"); if (!option) return;
+      tagFilter = option.dataset.tagFilter; closeMenus(); renderList();
+    });
+    $("#sort-button").addEventListener("click", event => {
+      event.stopPropagation(); const menu=$("#sort-menu"), open=!menu.classList.contains("open");
+      closeMenus();
+      menu.classList.toggle("open", open); $("#sort-button").setAttribute("aria-expanded", String(open));
+    });
+    $("#sort-menu").addEventListener("click", event => {
+      const button=event.target.closest("[data-sort]"); if(!button) return;
+      sortMode=button.dataset.sort; $$(".sort-option").forEach(item=>item.classList.toggle("active",item===button));
+      $("#sort-button").textContent = sortMode === "deadline" ? "按截止时间" : "按收到时间";
+      closeMenus(); renderList();
+    });
+    document.addEventListener("click", event => {
+      if(!event.target.closest(".sort-wrap,.filter-picker,.status-picker,.tag-picker")) closeMenus();
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && $("#confirm-dialog").open) return;
+      if (event.key === "Escape" && $("#tag-manager-modal").open) closeTagManager();
+    });
+    function $$(selector) { return [...document.querySelectorAll(selector)]; }
+
+    const appTitle = $("#app-title");
+    try { appTitle.value = localStorage.getItem("work-list-title") || "工作清单"; } catch {}
+    appTitle.addEventListener("input", () => { try { localStorage.setItem("work-list-title", appTitle.value || "工作清单"); } catch {} });
+
+    fetch("/api/tasks").then(response => {
+      if (!response.ok) throw new Error("无法读取本地数据"); return response.json();
+    }).then(data => {
+      state.tasks = Array.isArray(data.tasks) ? data.tasks : [];
+      state.tags = Array.isArray(data.tags) ? data.tags.map(tag => String(tag).trim()).filter(Boolean) : [];
+      state.tasks.forEach((task,index) => {
+        if (!task.family) task.family = families[index % families.length];
+        (task.items || []).forEach((item,itemIndex) => {
+          if (!item.family) item.family = families[(families.indexOf(task.family) + itemIndex + families.length) % families.length];
+        });
+      });
+      state.tags = allTags();
+      selectedId = state.tasks[0]?.id || null; setSaveState("数据已载入"); render();
+    }).catch(() => {
+      setSaveState("无法读取数据，请检查启动窗口", true);
+      $("#details").textContent = "无法读取本地数据。请关闭页面后重新启动工作清单；如问题仍在，请保留 tasks.json 文件。";
+    });
+  </script>
+</body>
+</html>

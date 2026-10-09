@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+
+.notestrata-port
+tasks.json
+tasks.json.*
+
+build/
+build-*/
+dist/
+dist-*/
+releases/
+*.zip
