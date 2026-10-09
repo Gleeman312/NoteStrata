@@ -2,10 +2,8 @@
 
 ## 1.0.1 — 2026-10-09
 
-- Added an **Exit** button beside the save status at the bottom of the sidebar.
-- Added a centered confirmation dialog before exiting.
-- NoteStrata now saves pending changes before shutting down the local service.
-- Added a final page confirming that NoteStrata has exited successfully.
+- Added an **Exit** button for stopping the local service.
+- Changed the browser tab title to **NoteStrata**.
 
 ## 1.0.0 — 2026-10-09
 

@@ -54,8 +54,6 @@ py -3 app.py
 
 - 工作数据保存在程序目录中的 `tasks.json`。
 - 每次覆盖保存前，上一份数据会复制为 `tasks.json.bak`。
-- 源码仓库和发布包不包含作者的个人工作数据。
-- `tasks.example.json` 是空白数据格式示例。
 - 如需迁移数据，请关闭 NoteStrata 后复制 `tasks.json`；建议同时备份 `tasks.json.bak`。
 
 ## 退出程序
@@ -71,19 +69,9 @@ py -3 app.py
 
 同一目录只会运行一个 NoteStrata 服务实例。再次启动会尝试重新打开已经运行的页面。
 
-## 项目文件
-
-```text
-app.py                  本地 HTTP 服务与数据读写
-index.html              用户界面、交互与样式
-Start-NoteStrata.pyw    Windows 无命令行窗口启动器
-tasks.example.json      空白数据示例
-docs/screenshot.png     README 界面截图
-```
-
 ## 隐私与安全
 
-NoteStrata 不包含遥测、账号系统或远程服务。浏览器只访问由本机启动的 `127.0.0.1` 地址。请不要把包含个人数据的 `tasks.json` 提交到公开仓库；项目的 `.gitignore` 已默认忽略该文件及其备份。
+NoteStrata 不包含遥测、账号系统或远程服务。浏览器只访问由本机启动的 `127.0.0.1` 地址。
 
 ## 许可证
 
@@ -91,77 +79,10 @@ NoteStrata 不包含遥测、账号系统或远程服务。浏览器只访问由
 
 ---
 
-## Features
+## English
 
-- Organize work into nested projects, subtasks, and steps.
-- Attach multiple notes to work items at every level.
-- Track received dates, deadlines, and status.
-- Create, select, rename, and delete tags.
-- Search by title and filter or sort by status, tag, and received date.
-- Reorder items by dragging.
-- Save automatically to a local JSON file with a rolling backup.
-- Export the current content as Markdown.
-- Keep all data on the local computer; the server listens only on `127.0.0.1`.
+Extract the selected package and start `NoteStrata.exe`, or double-click `Start-NoteStrata.pyw` when running from source. Data is stored locally in `tasks.json`, with the previous copy kept as `tasks.json.bak`.
 
-## Running from source
+Use the **Exit** button to save the current content and stop the local service. The browser tab remains open because ordinary web pages cannot reliably close a user-opened tab; it is safe to close the tab after the exit message appears.
 
-### Requirements
-
-- Windows 10 or Windows 11.
-- Python 3.10 or later.
-- No third-party Python packages are required.
-
-### Start
-
-1. Extract the complete source ZIP.
-2. Double-click `Start-NoteStrata.pyw`.
-3. NoteStrata starts in the background and opens in the Windows default browser.
-
-If `.pyw` files are not associated on the system, open a terminal in the source directory and run:
-
-```powershell
-py -3 app.py
-```
-
-NoteStrata does not select a specific browser or modify browser/Python file associations.
-
-## Windows x64 portable build
-
-1. Extract the complete `NoteStrata-1.0.1-Windows-x64-Portable.zip` archive.
-2. Keep `NoteStrata.exe` and the `_internal` directory together.
-3. Double-click `NoteStrata.exe` normally. Do not run it as administrator.
-
-The current portable build is unsigned. Windows may display an unknown-publisher, Open File security, or Microsoft Defender SmartScreen warning. After confirming that the file came from this project, choose **Run** or **More info → Run anyway**.
-
-If Edge reports that an existing instance is running with elevated privileges, choose **Yes** to restart Edge normally, or close every Edge window and reopen Edge without administrator privileges. NoteStrata and the browser should both run with normal privileges.
-
-## Data and backups
-
-- Work data is stored in `tasks.json` beside the application.
-- Before overwriting the file, NoteStrata copies the previous data to `tasks.json.bak`.
-- The repository and release archives do not contain the author's personal work data.
-- `tasks.example.json` documents the empty data format.
-- To migrate data, stop NoteStrata and copy `tasks.json`; keeping `tasks.json.bak` is also recommended.
-
-## Stopping NoteStrata
-
-Use the **Exit** button at the bottom of the sidebar. After confirmation, NoteStrata saves the current content, shuts down the local service, and replaces the work interface with a “NoteStrata has exited” page.
-
-Browser security rules prevent ordinary web pages from reliably closing user-opened tabs. Close the tab manually after the exit message appears; the background service and `pythonw.exe`/`NoteStrata.exe` process have already stopped. If **Exit** is not used, NoteStrata remains available in the background so the page can be reopened later.
-
-If the normal exit action is unavailable, use one of these fallback methods:
-
-- Source version: end the matching `pythonw.exe` in Task Manager, or press `Ctrl+C` when running from a terminal.
-- Portable version: end `NoteStrata.exe` in Task Manager.
-
-Only one service instance runs per application directory. Starting NoteStrata again attempts to reopen the existing page.
-
-## Privacy and security
-
-NoteStrata has no telemetry, accounts, or remote service. The browser communicates only with the local `127.0.0.1` server. Do not commit a `tasks.json` file containing personal data to a public repository; the supplied `.gitignore` excludes it and its backups by default.
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
-
-See [CHANGELOG.md](CHANGELOG.md) for version history.
+The portable build is unsigned, so Windows may show an unknown-publisher or SmartScreen warning on first launch.
